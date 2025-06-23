@@ -1,36 +1,124 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import NicknameModal from './components/NicknameModal'
+import Navbar from './components/Navbar'
+import Home from './components/Home'
+import Chat from './components/Chat'
+import Matching from './components/Matching'
+import Silk from './components/Silk'
+import Footer from './components/layout/Footer'
+import MultipleTabsModal from './components/layout/MultipleTabsModal'
+import { useSocket } from './hooks/useSocket'
+import { useTabManager } from './hooks/useTabManager'
+import { useAppState } from './hooks/useAppState'
+import { createChatHandlers } from './handlers/chatHandlers'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { isActiveTab } = useTabManager()
+  const appState = useAppState()
+  const { socket, isConnecting, connectSocket, disconnectSocket } = useSocket()
+    const {
+    currentView,
+    setCurrentView,
+    username,
+    setUsername,
+    roomId,    chatType,
+    showNicknameModal,
+    setShowNicknameModal,
+    isRoomCreator
+  } = appState
+
+  const {
+    handleChatWithStranger,
+    handleCreateRoom,
+    handleJoinRoom,
+    handleLeaveChat,
+    handleFindNewStranger
+  } = createChatHandlers(appState, socket, connectSocket, disconnectSocket, isConnecting)
+
+  const handleNicknameSubmit = (newUsername) => {
+    setUsername(newUsername)
+    setCurrentView('home')
+    setShowNicknameModal(false)
+  }
+
+  const handleCancelMatching = () => {
+    disconnectSocket()
+    appState.resetToHome()
+  }
+
+  const handleLogout = () => {
+    disconnectSocket()
+    sessionStorage.removeItem('chatapp_username')
+    localStorage.removeItem('chatapp_active_tab')
+    setUsername('')
+    setCurrentView('nickname')
+    setShowNicknameModal(true)
+    appState.resetToHome()
+  }
+
+  // Show multiple tabs modal if not active tab
+  if (!isActiveTab) {
+    return (
+      <div className="min-h-screen relative" style={{ background: 'transparent' }}>
+        <Silk />
+        <MultipleTabsModal />
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-8">
-      <div className="flex gap-8 mb-8">
-        <a href="https://vite.dev" target="_blank" className="hover:drop-shadow-[0_0_2em_#646cffaa] transition-all duration-300">
-          <img src={viteLogo} className="h-24 w-24 animate-spin" style={{animationDuration: '20s'}} alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" className="hover:drop-shadow-[0_0_2em_#61dafbaa] transition-all duration-300">
-          <img src={reactLogo} className="h-24 w-24 animate-spin" style={{animationDuration: '10s'}} alt="React logo" />
-        </a>
-      </div>
-      <h1 className="text-5xl font-bold mb-8 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Vite + React</h1>
-      <div className="bg-gray-800 p-8 rounded-xl shadow-xl border border-gray-700 mb-8">
-        <button 
-          onClick={() => setCount((count) => count + 1)}
-          className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg border border-gray-600 transition-colors duration-200 mb-4"
-        >
-          count is {count}
-        </button>
-        <p className="text-gray-300">
-          Edit <code className="bg-gray-700 px-2 py-1 rounded text-sm font-mono text-yellow-300">src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="text-gray-400 text-sm max-w-md text-center">
-        Click on the Vite and React logos to learn more
-      </p>
+    <div className="min-h-screen relative" style={{ background: 'transparent' }}>
+      {/* Global Silk Background */}
+      <Silk />      {/* Nickname Modal */}
+      {showNicknameModal && (
+        <NicknameModal 
+          isOpen={showNicknameModal}
+          onSubmit={handleNicknameSubmit}
+        />
+      )}
+
+      {/* Main Content */}
+      {!showNicknameModal && (
+        <>          {/* Navbar - Hidden in chat views */}
+          {currentView !== 'chat' && (
+            <Navbar 
+              username={username}
+              onCreateRoom={handleCreateRoom}
+              onJoinRoom={handleJoinRoom}
+              onLogout={handleLogout}
+            />
+          )}          {/* Home Page */}
+          {currentView === 'home' && (
+            <Home 
+              username={username}
+              onChatWithStranger={handleChatWithStranger}
+            />
+          )}
+
+          {/* Matching Screen */}
+          {currentView === 'matching' && (
+            <Matching 
+              onCancel={handleCancelMatching}
+            />
+          )}
+
+          {/* Chat Screen */}
+          {currentView === 'chat' && socket && (
+            <Chat 
+              username={username}
+              roomId={roomId}
+              chatType={chatType}
+              socket={socket}
+              onLeaveChat={handleLeaveChat}
+              isRoomCreator={isRoomCreator}
+              onFindNewStranger={handleFindNewStranger}
+            />
+          )}
+        </>
+      )}
+
+      {/* Footer - only show on home page */}
+      {isActiveTab && currentView === 'home' && <Footer />}
     </div>
   )
 }
