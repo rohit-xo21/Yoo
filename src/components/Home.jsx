@@ -35,7 +35,7 @@ function Home({ username, onChatWithStranger }) {
           </p>          {/* Main CTA Button */}
           <button
             onClick={onChatWithStranger}
-            className="transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 mb-6"
+            className="transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105"
             style={{
               padding: '1.25rem 2.5rem',
               fontSize: '1.1rem',
@@ -55,7 +55,8 @@ function Home({ username, onChatWithStranger }) {
             onMouseLeave={(e) => {
               e.target.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1))'
               e.target.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)'
-            }}          >
+            }}
+          >
             Chat with Stranger
           </button>
         </div>

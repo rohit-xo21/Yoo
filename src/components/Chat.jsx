@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
+import { validateMessage } from '../utils/validation'
+import { formatTimestamp } from '../utils/helpers'
+import { useToast } from '../hooks/useToast'
 
 function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, onFindNewStranger }) {
   const [messages, setMessages] = useState([])
@@ -7,6 +10,7 @@ function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, 
   const [isConnected, setIsConnected] = useState(false)
   const [partnerUsername, setPartnerUsername] = useState('')
   const messagesEndRef = useRef(null)
+  const { showError } = useToast()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -62,24 +66,37 @@ function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, 
           id: Date.now(),
           type: 'system',
           message: `Connected with ${data.partnerUsername}`,
-          timestamp: new Date().toISOString()
-        }])
+          timestamp: new Date().toISOString()        }])
       })
 
-      socket.on('stranger-left', () => {
-        setMessages(prev => [...prev, {
+      socket.on('stranger-left', (data) => {
+        // Handle enhanced stranger-left event with redirect instructions
+        const reason = data?.reason || 'unknown'
+        const message = data?.message || 'Stranger disconnected.'
+        const shouldRedirectHome = data?.redirectToHome || false
+        
+        console.log('Stranger left event received:', { reason, message, shouldRedirectHome })
+          setMessages(prev => [...prev, {
           id: Date.now(),
           type: 'system',
-          message: 'Stranger disconnected. Finding you a new chat partner...',
-          timestamp: new Date().toISOString()
+          message: message,
+          timestamp: new Date().toISOString(),
+          isRedirect: shouldRedirectHome // Flag for special styling
         }])
         
-        // Redirect to matching/searching when stranger leaves
+        // Redirect based on server instruction
         setTimeout(() => {
-          if (onFindNewStranger) {
-            onFindNewStranger() // Start searching for a new stranger
+          if (shouldRedirectHome) {
+            // New behavior: Go directly to home when partner leaves
+            console.log('Redirecting to home as instructed by server')
+            onLeaveChat() // This will disconnect and go to home
           } else {
-            onLeaveChat() // Fallback to going back to home
+            // Legacy behavior: Try to find new stranger (for high traffic scenarios)
+            if (onFindNewStranger) {
+              onFindNewStranger() // Start searching for a new stranger
+            } else {
+              onLeaveChat() // Fallback to going back to home
+            }
           }
         }, 2000) // Wait 2 seconds to show the disconnect message
       })
@@ -99,29 +116,32 @@ function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, 
       socket.off('disconnect')
     }
   }, [socket, chatType, roomId, onLeaveChat, onFindNewStranger])
-
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
   const handleSendMessage = (e) => {
     e.preventDefault()
-    if (newMessage.trim() && socket) {
-      socket.emit('send-message', {
-        message: newMessage.trim(),
-        roomId: roomId,
-        chatType: chatType
-      })
-
-      setNewMessage('')
+    
+    if (!socket) return
+    
+    const validation = validateMessage(newMessage)
+    if (!validation.isValid) {
+      showError(validation.message)
+      return
     }
+
+    socket.emit('send-message', {
+      message: validation.message,
+      roomId: roomId,
+      chatType: chatType
+    })
+
+    setNewMessage('')
   }
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+    return formatTimestamp(timestamp)
   }
 
   const getChatTitle = () => {

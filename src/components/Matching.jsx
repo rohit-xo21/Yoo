@@ -1,4 +1,49 @@
-function Matching({ username, onCancel }) {
+import { useState, useEffect } from 'react'
+import LoadingSpinner from './LoadingSpinner'
+import { useAppState } from '../hooks/useAppState'
+
+function Matching({ onCancel }) {
+  const [waitingTime, setWaitingTime] = useState(0)
+  const [motivationalMessage, setMotivationalMessage] = useState('Finding someone special...')
+  const { username } = useAppState()
+  useEffect(() => {
+    // Messages to rotate through while waiting
+    const messages = [
+      'Finding someone special...',
+      'Looking for interesting people...',
+      'Connecting hearts and minds...',
+      'Great conversations are worth the wait...',
+      'Someone amazing is looking for you too...'
+    ]
+
+    // Update waiting time every second
+    const timeInterval = setInterval(() => {
+      setWaitingTime(prev => prev + 1)
+    }, 1000)
+
+    // Rotate motivational messages every 3 seconds
+    const messageInterval = setInterval(() => {
+      setMotivationalMessage(prev => {
+        const currentIndex = messages.indexOf(prev)
+        const nextIndex = (currentIndex + 1) % messages.length
+        return messages[nextIndex]
+      })
+    }, 3000)
+
+    return () => {
+      clearInterval(timeInterval)
+      clearInterval(messageInterval)
+    }
+  }, [])
+
+  const formatWaitingTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    if (mins > 0) {
+      return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+    return `${secs}s`
+  }
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative">      
       <div
@@ -10,18 +55,9 @@ function Matching({ username, onCancel }) {
           padding: '3rem',
           border: '1px solid rgba(255, 255, 255, 0.2)'
         }}
-      >
-        {/* Loading Animation */}
+      >        {/* Loading Animation */}
         <div className="mb-8 flex justify-center">
-          <div 
-            className="rounded-full border-white border-opacity-30 animate-spin"
-            style={{
-              width: '3rem',
-              height: '3rem',
-              borderWidth: '3px',
-              borderTopColor: '#ffffff'
-            }}
-          />
+          <LoadingSpinner size="lg" text="" />
         </div>
 
         {/* Title */}
@@ -31,8 +67,20 @@ function Matching({ username, onCancel }) {
             fontFamily: 'Inter, sans-serif'
           }}
         >
-          Finding someone special...
+          {motivationalMessage}
         </h2>
+
+        {/* Waiting time */}
+        <div 
+          className="mb-2"
+          style={{
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontSize: '0.875rem',
+            fontFamily: 'Inter, sans-serif'
+          }}
+        >
+          Waiting: {formatWaitingTime(waitingTime)}
+        </div>
 
         {/* Description */}
         <p 

@@ -10,7 +10,7 @@ export const useAppState = () => {
 
   // Check for stored username on app load
   useEffect(() => {
-    const storedUsername = sessionStorage.getItem('chatapp_username')
+    const storedUsername = localStorage.getItem('chatapp_username')
     
     if (storedUsername) {
       setUsername(storedUsername)
@@ -21,7 +21,7 @@ export const useAppState = () => {
 
   const setUsernameAndStore = (newUsername) => {
     setUsername(newUsername)
-    sessionStorage.setItem('chatapp_username', newUsername)
+    localStorage.setItem('chatapp_username', newUsername)
   }
 
   const resetToHome = () => {
@@ -29,6 +29,14 @@ export const useAppState = () => {
     setRoomId('')
     setChatType('')
     setIsRoomCreator(false)
+  }
+
+  const logout = () => {
+    setUsername('')
+    setCurrentView('nickname')
+    setShowNicknameModal(true)
+    localStorage.removeItem('chatapp_username')
+    resetToHome()
   }
 
   return {
@@ -44,6 +52,7 @@ export const useAppState = () => {
     setShowNicknameModal,
     isRoomCreator,
     setIsRoomCreator,
-    resetToHome
+    resetToHome,
+    logout
   }
 }
