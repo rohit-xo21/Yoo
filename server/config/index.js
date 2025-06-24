@@ -4,7 +4,7 @@ const config = {
   port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   cors: {
-    origin: true, // Allow all origins for now to debug connection issues
+    origin: process.env.FRONTEND_URL || '*', // Allow all origins for now to debug connection issues
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     credentials: true,
     allowedHeaders: ["*"],
