@@ -1,7 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 function NicknameModal({ isOpen, onSubmit }) {
   const [nickname, setNickname] = useState('')
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      // Focus the input when modal opens
+      inputRef.current.focus()
+    }
+  }, [isOpen])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -9,10 +17,25 @@ function NicknameModal({ isOpen, onSubmit }) {
       onSubmit(nickname.trim())
     }
   }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      // Don't allow closing this modal with Escape as it's required
+      e.preventDefault()
+    }
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="nickname-modal-title"
+      aria-describedby="nickname-modal-description"
+      onKeyDown={handleKeyDown}
+    >
       {/* Modal Content */}
       <div 
         className="relative z-10 w-full max-w-md mx-4 shadow-2xl"
@@ -26,12 +49,14 @@ function NicknameModal({ isOpen, onSubmit }) {
       >
         <div className="text-center mb-8">
           <h2 
+            id="nickname-modal-title"
             className="text-3xl font-light text-white mb-2" 
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
             Welcome to Yoo
           </h2>
           <p 
+            id="nickname-modal-description"
             className="text-sm" 
             style={{ 
               color: 'rgba(255, 255, 255, 0.85)',
@@ -44,21 +69,36 @@ function NicknameModal({ isOpen, onSubmit }) {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <input
+            <label htmlFor="nickname-input" className="sr-only">
+              Nickname
+            </label>            <input
+              id="nickname-input"
+              ref={inputRef}
               type="text"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}              placeholder="Enter your nickname"
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Enter your nickname"
+              required
+              minLength={2}
+              maxLength={20}
+              aria-describedby="nickname-requirements"
               className="w-full px-6 py-4 rounded-xl text-white transition-all duration-200 placeholder-white placeholder-opacity-60"
               style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 backdropFilter: 'blur(10px)',
                 fontFamily: 'Inter, sans-serif'
+              }}            />
+            <div 
+              id="nickname-requirements"
+              className="mt-2 text-xs"
+              style={{ 
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontFamily: 'Inter, sans-serif'
               }}
-              required
-              maxLength={import.meta.env.VITE_MAX_USERNAME_LENGTH || 20}
-              autoFocus
-            />
+            >
+              2-20 characters, letters and numbers only
+            </div>
           </div>
           
           <button

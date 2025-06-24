@@ -2,11 +2,11 @@ const RoomService = require('../services/RoomService');
 const StrangerChatService = require('../services/StrangerChatService');
 const MessageUtils = require('../services/MessageUtils');
 
-class SocketController {
-  constructor(io) {
+class SocketController {  constructor(io) {
     this.io = io;
     this.roomService = new RoomService();
     this.strangerChatService = new StrangerChatService();
+    this.strangerChatService.setIO(io); // Set the io instance for broadcasting
   }
 
   handleConnection(socket) {
@@ -40,11 +40,16 @@ class SocketController {
       console.log(`${username} joined room ${roomId}`);
     });
   }
-
   handleFindStranger(socket) {
     socket.on('find-stranger', (data) => {
       const { username } = data;
       socket.username = username;
+
+      // First check if user is already waiting
+      if (this.strangerChatService.waitingUsers.some(user => user.username === username)) {
+        socket.emit('already-waiting', { message: 'You are already in the queue' });
+        return;
+      }
 
       const match = this.strangerChatService.findMatch(socket);
 
@@ -69,9 +74,16 @@ class SocketController {
 
         console.log(`Matched ${username} with ${partner.username}`);
       } else {
-        this.strangerChatService.addToWaitingList(socket);
-        socket.emit('waiting-for-stranger');
-        console.log(`${username} is waiting for a stranger`);
+        const added = this.strangerChatService.addToWaitingList(socket);
+        if (added) {
+          socket.emit('waiting-for-stranger', { 
+            waitingCount: this.strangerChatService.waitingUsers.length 
+          });
+          console.log(`${username} is waiting for a stranger`);
+          this.strangerChatService.broadcastWaitingUpdate();
+        } else {
+          socket.emit('already-waiting', { message: 'You are already in the queue' });
+        }
       }
     });
   }
@@ -104,15 +116,26 @@ class SocketController {
       }
     });
   }
-
   handleLeaveStrangerChat(socket) {
     socket.on('leave-stranger-chat', () => {
+      // Remove from waiting list if still waiting
+      this.strangerChatService.removeFromWaitingList(socket.id);
+      this.strangerChatService.broadcastWaitingUpdate();
+      
       if (socket.strangerChatId) {
-        socket.to(socket.strangerChatId).emit('stranger-left');
+        // Notify the partner that user left and they should go home
+        socket.to(socket.strangerChatId).emit('stranger-left', {
+          reason: 'partner-left',
+          message: 'Your chat partner has left. Redirecting to home...',
+          redirectToHome: true
+        });
+        
         this.strangerChatService.removeStrangerChat(socket.strangerChatId);
         socket.leave(socket.strangerChatId);
         socket.strangerChatId = null;
       }
+      
+      console.log(`${socket.username || 'User'} left stranger chat`);
     });
   }
 
@@ -132,11 +155,14 @@ class SocketController {
           username: socket.username,
           users
         });
-      }
-
-      // Handle stranger chat disconnection
+      }      // Handle stranger chat disconnection
       if (socket.strangerChatId) {
-        socket.to(socket.strangerChatId).emit('stranger-left');
+        // Notify the partner that user disconnected and they should go home
+        socket.to(socket.strangerChatId).emit('stranger-left', {
+          reason: 'partner-disconnected',
+          message: 'Your chat partner has disconnected. Redirecting to home...',
+          redirectToHome: true
+        });
         this.strangerChatService.removeStrangerChat(socket.strangerChatId);
       }
     });

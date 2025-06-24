@@ -1,4 +1,4 @@
-# Socket Chat App
+# Yoo - Socket Chat App
 
 A real-time chat application built with React, Tailwind CSS, Node.js, Express, and Socket.IO. Users can create or join chat rooms by entering a room ID or connect with a random stranger for one-on-one chats.
 
