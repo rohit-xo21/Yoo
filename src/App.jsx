@@ -6,7 +6,6 @@ import Matching from './components/Matching'
 import Silk from './components/Silk'
 import Footer from './components/layout/Footer'
 import MultipleTabsModal from './components/layout/MultipleTabsModal'
-import ConnectionStatus from './components/ConnectionStatus'
 import { ToastProvider, useToast } from './hooks/useToast.jsx'
 import { useSocket } from './hooks/useSocket'
 import { useTabManager } from './hooks/useTabManager'
@@ -17,7 +16,7 @@ import './App.css'
 function AppContent() {
   const { isActiveTab } = useTabManager()
   const appState = useAppState()
-  const { socket, isConnecting, connectionError, connectSocket, disconnectSocket } = useSocket()
+  const { socket, isConnecting, connectSocket, disconnectSocket } = useSocket()
   const { showError, showWarning, showInfo } = useToast()
   
   const {
@@ -77,9 +76,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen relative" style={{ background: 'transparent' }}>
-      {/* Connection Status Indicator */}
-      <ConnectionStatus socket={socket} connectionError={connectionError} />
-      
       {/* Global Silk Background */}
       <Silk />
       

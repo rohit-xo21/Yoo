@@ -9,17 +9,22 @@ export const useSocket = () => {
   const maxReconnectAttempts = 5
 
   const getSocketURL = () => {
-    // Check if we're on mobile and prefer secure connection
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-    const isHTTPS = window.location.protocol === 'https:'
+    // Always use the environment variable if available
+    const envURL = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_SOCKET_URL
     
-    if (import.meta.env.PROD) {
-      return import.meta.env.VITE_SERVER_URL || 'https://yoo-production.up.railway.app'
+    if (envURL) {
+      // Remove trailing slash if present
+      return envURL.replace(/\/$/, '')
     }
     
-    // For development, use appropriate protocol
-    const protocol = isHTTPS ? 'https:' : 'http:'
-    return import.meta.env.VITE_SERVER_URL || `${protocol}//localhost:3000`
+    // Fallback logic
+    if (import.meta.env.PROD) {
+      return 'https://yoo-production.up.railway.app'
+    }
+    
+    // For development
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
+    return `${protocol}//localhost:3000`
   }
 
   const connectSocket = useCallback(() => {
@@ -40,16 +45,22 @@ export const useSocket = () => {
     console.log('Attempting to connect to:', socketURL)
 
     const newSocket = io(socketURL, {
-      transports: ['websocket', 'polling'], // Try WebSocket first, fallback to polling
-      timeout: 20000, // 20 second timeout
+      transports: ['polling', 'websocket'], // Try polling first for mobile compatibility
+      timeout: 30000, // 30 second timeout
       reconnection: true,
       reconnectionAttempts: maxReconnectAttempts,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
       maxReconnectionAttempts: maxReconnectAttempts,
       forceNew: true,
       upgrade: true,
-      rememberUpgrade: false // Don't remember upgrade on mobile
+      rememberUpgrade: false, // Don't remember upgrade on mobile
+      autoConnect: true,
+      // Add query parameters for debugging
+      query: {
+        timestamp: Date.now(),
+        userAgent: navigator.userAgent.substring(0, 50)
+      }
     })
 
     // Enhanced error handling for mobile
@@ -99,8 +110,8 @@ export const useSocket = () => {
       
       setConnectionError(errorMessage)
       
-      // Show user-friendly alert
-      if (reconnectAttempts.current === 0) {
+      // Only show alert after multiple failed attempts
+      if (reconnectAttempts.current >= 3) {
         alert(`Connection Error: ${errorMessage}\n\nTip: Try switching between WiFi and mobile data, or refresh the page.`)
       }
       
