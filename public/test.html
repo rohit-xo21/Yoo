@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            color: white;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .warning { background: #ff9800; }
+        .info { background: #2196F3; }
+        #logs {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Socket.IO Connection Test</h1>
+    <div id="status" class="status info">Initializing...</div>
+    
+    <div>
+        <h3>Actions:</h3>
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <button onclick="testWithPolling()">Test Polling Only</button>
+    </div>
+    
+    <div>
+        <h3>Device Info:</h3>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>Protocol:</strong> <span id="protocol"></span></p>
+        <p><strong>Host:</strong> <span id="host"></span></p>
+    </div>
+    
+    <div>
+        <h3>Connection Logs:</h3>
+        <div id="logs"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script>
+        const SERVER_URL = 'https://yoo-production.up.railway.app';
+        let socket = null;
+        
+        // Display device info
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('protocol').textContent = window.location.protocol;
+        document.getElementById('host').textContent = window.location.host;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logs = document.getElementById('logs');
+            logs.textContent += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').textContent = '';
+        }
+        
+        function testConnection() {
+            if (socket) {
+                socket.disconnect();
+            }
+            
+            log('🔗 Attempting to connect to: ' + SERVER_URL);
+            updateStatus('Connecting...', 'warning');
+            
+            socket = io(SERVER_URL, {
+                transports: ['polling', 'websocket'],
+                timeout: 15000,
+                reconnection: false,
+                query: {
+                    test: 'mobile-debug',
+                    userAgent: navigator.userAgent.substring(0, 50)
+                }
+            });
+            
+            socket.on('connect', () => {
+                log('✅ Connected successfully! Socket ID: ' + socket.id);
+                updateStatus('Connected', 'success');
+            });
+            
+            socket.on('connect_error', (error) => {
+                log('❌ Connection error: ' + error.message);
+                updateStatus('Connection Failed', 'error');
+            });
+            
+            socket.on('disconnect', (reason) => {
+                log('🔌 Disconnected: ' + reason);
+                updateStatus('Disconnected', 'warning');
+            });
+            
+            socket.on('reconnect_attempt', (attemptNumber) => {
+                log('🔄 Reconnection attempt #' + attemptNumber);
+            });
+        }
+        
+        function testWithPolling() {
+            if (socket) {
+                socket.disconnect();
+            }
+            
+            log('🔗 Testing with polling only...');
+            updateStatus('Testing Polling...', 'warning');
+            
+            socket = io(SERVER_URL, {
+                transports: ['polling'],
+                timeout: 15000,
+                reconnection: false,
+                upgrade: false,
+                query: {
+                    test: 'polling-only',
+                    userAgent: navigator.userAgent.substring(0, 50)
+                }
+            });
+            
+            socket.on('connect', () => {
+                log('✅ Polling connection successful! Socket ID: ' + socket.id);
+                updateStatus('Polling Connected', 'success');
+            });
+            
+            socket.on('connect_error', (error) => {
+                log('❌ Polling connection error: ' + error.message);
+                updateStatus('Polling Failed', 'error');
+            });
+            
+            socket.on('disconnect', (reason) => {
+                log('🔌 Polling disconnected: ' + reason);
+                updateStatus('Disconnected', 'warning');
+            });
+        }
+        
+        // Auto-test on load
+        setTimeout(() => {
+            testConnection();
+        }, 1000);
+    </script>
+</body>
+</html>

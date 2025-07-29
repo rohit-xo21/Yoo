@@ -1,0 +1,14 @@
+[phases.install]
+cmds = [
+  "npm install -g pnpm@latest",
+  "pnpm install --no-frozen-lockfile"
+]
+
+[phases.build]
+cmds = ["echo 'No build phase needed for Node.js server'"]
+
+[start]
+cmd = "node server.js"
+
+[variables]
+NODE_ENV = "production"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { validateMessage } from '../utils/validation'
 import { formatTimestamp } from '../utils/helpers'
-import { useToast } from '../hooks/useToast'
+import { useToast } from '../hooks/useToast.jsx'
 
 function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, onFindNewStranger }) {
   const [messages, setMessages] = useState([])

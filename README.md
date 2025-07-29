@@ -2,6 +2,8 @@
 
 A real-time chat application built with React, Tailwind CSS, Node.js, Express, and Socket.IO. Users can create or join chat rooms by entering a room ID or connect with a random stranger for one-on-one chats.
 
+![Yoo Chat App Mockup](public/yoo-mockup.png)
+
 ## Features
 
 - Create or join chat rooms with a unique room ID
