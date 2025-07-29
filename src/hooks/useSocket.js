@@ -10,7 +10,6 @@ export const useSocket = () => {
       setIsConnecting(true)
       
       const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'
-      console.log('Connecting to server at:', serverUrl)
       
       const newSocket = io(serverUrl, {
         transports: ['websocket', 'polling'],
@@ -18,24 +17,16 @@ export const useSocket = () => {
       })
 
       newSocket.on('connect', () => {
-        console.log('✅ Connected to server with socket ID:', newSocket.id)
         setSocket(newSocket)
         setIsConnecting(false)
-        
-        // Add global event listener for debugging
-        newSocket.onAny((eventName, ...args) => {
-          console.log(`🔊 Socket received event: ${eventName}`, args)
-        })
       })
 
-      newSocket.on('connect_error', (error) => {
-        console.error('❌ Connection error:', error)
+      newSocket.on('connect_error', () => {
         setIsConnecting(false)
         alert('Failed to connect to server. Please try again.')
       })
 
       newSocket.on('disconnect', () => {
-        console.log('❌ Disconnected from server')
         setSocket(null)
       })
 
