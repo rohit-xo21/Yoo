@@ -3,13 +3,13 @@
   "version": "1.1.0",
   "type": "module",
   "description": "A real-time chat application built with React, Tailwind CSS, Node.js, Express, and Socket.IO",
-  "main": "server/server.js",
+  "main": "start.js",
   "scripts": {
-    "start": "npm run build && node server/server.js",
-    "build": "vite build",
+    "start": "cd server && npm install && node server.js",
+    "build": "vite build", 
     "dev": "vite",
     "preview": "vite preview",
-    "server": "node server/server.js",
+    "server": "cd server && node server.js",
     "dev:server": "cd server && node server.js"
   },
   "dependencies": {

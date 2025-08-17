@@ -14,9 +14,20 @@ export const useSocket = () => {
       
       const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'
       
+      // Check if we're trying to connect to Vercel (which doesn't support WebSockets)
+      if (serverUrl.includes('vercel.app')) {
+        setIsConnecting(false)
+        setConnectionError('WebSocket connections are not supported on Vercel. Please use a WebSocket-compatible hosting service like Railway, Render, or Heroku.')
+        alert('Connection Error: WebSocket connections are not supported on Vercel.\n\nPlease deploy your server to:\n• Railway.app\n• Render.com\n• Heroku\n• Any other WebSocket-compatible hosting service\n\nFor now, switch to development mode by updating your .env file.')
+        return
+      }
+      
       const newSocket = io(serverUrl, {
         transports: ['websocket', 'polling'],
-        timeout: 10000,        forceNew: true
+        timeout: 10000,
+        forceNew: true,
+        upgrade: true,
+        rememberUpgrade: true
       })
 
       newSocket.on('connect', () => {
