@@ -38,9 +38,10 @@ export const createChatHandlers = (
     if (!validation.isValid) {
       showMessage(validation.message, 'error')
       return
-    }const newSocket = connectSocket()
+    }
+    
+    const newSocket = connectSocket()
     if (newSocket) {
-      console.log('Setting up stranger chat with socket:', newSocket.id)
       setChatType('stranger')
       setCurrentView('matching')
       setIsRoomCreator(false)
@@ -49,37 +50,28 @@ export const createChatHandlers = (
       newSocket.off('stranger-matched')
       newSocket.off('waiting-for-stranger')
       newSocket.off('waiting-update')
-        // Set up event listeners BEFORE emitting find-stranger      // Handle successful matching
+      // Handle successful matching
       newSocket.on('stranger-matched', (data) => {
-        console.log('✅ ChatHandlers: Received stranger-matched event:', data)
-        console.log('✅ ChatHandlers: Waiting 500ms before transition to ensure socket stability...')
-        
         // Add delay to prevent race condition with socket disconnection
         setTimeout(() => {
           if (newSocket.connected) {
-            console.log('✅ ChatHandlers: Socket still connected, proceeding with transition')
             setRoomId(data.chatId || data.roomId)
             setCurrentView('chat')
-            console.log('✅ ChatHandlers: View transition completed')
-          } else {
-            console.error('❌ ChatHandlers: Socket disconnected during delay, cannot transition')
           }
         }, 500)
       })
       
       // Handle waiting for stranger with real-time updates
-      newSocket.on('waiting-for-stranger', (data) => {
+      newSocket.on('waiting-for-stranger', () => {
         // Keep showing matching screen with updated info
-        console.log('ChatHandlers: Waiting for stranger...', data?.waitingCount ? `${data.waitingCount} users waiting` : '')
       })
-        // Handle real-time waiting updates
-      newSocket.on('waiting-update', (data) => {
-        console.log('ChatHandlers: Waiting update:', data.message)
+      
+      // Handle real-time waiting updates
+      newSocket.on('waiting-update', () => {
         // You can add UI updates here to show waiting count
       })
-        // Handle when stranger leaves during matching/waiting
+      // Handle when stranger leaves during matching/waiting
       newSocket.on('stranger-left', (data) => {
-        console.log('ChatHandlers: Stranger left during matching:', data)
         const message = data?.message || 'Your partner has left.'
         const shouldRedirectHome = data?.redirectToHome || false
         
@@ -91,8 +83,8 @@ export const createChatHandlers = (
       })
       
       // Now emit find-stranger after listeners are set up
-      console.log('Emitting find-stranger for username:', username)
-      newSocket.emit('find-stranger', { username })}
+      newSocket.emit('find-stranger', { username })
+    }
   }
   const handleCreateRoom = (newRoomId) => {
     if (isConnecting) {
@@ -183,21 +175,20 @@ export const createChatHandlers = (
       
       // Set up event listeners BEFORE emitting find-stranger
       socket.on('stranger-matched', (data) => {
-        console.log('Received stranger-matched event for new stranger:', data)
         setRoomId(data.chatId || data.roomId)
         setCurrentView('chat')
       })
       
-      socket.on('waiting-for-stranger', (data) => {
-        console.log('Waiting for new stranger...', data?.waitingCount ? `${data.waitingCount} users waiting` : '')
+      socket.on('waiting-for-stranger', () => {
+        // Waiting for new stranger
       })
-        socket.on('waiting-update', (data) => {
-        console.log('New stranger waiting update:', data.message)
+      
+      socket.on('waiting-update', () => {
+        // Waiting update
       })
       
       // Handle when stranger leaves during new stranger search
       socket.on('stranger-left', (data) => {
-        console.log('ChatHandlers: Stranger left during new search:', data)
         const message = data?.message || 'Your partner has left.'
         const shouldRedirectHome = data?.redirectToHome || false
           if (shouldRedirectHome) {

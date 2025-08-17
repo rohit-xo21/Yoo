@@ -10,8 +10,6 @@ class SocketController {  constructor(io) {
   }
 
   handleConnection(socket) {
-    console.log('User connected:', socket.id);
-
     this.handleJoinRoom(socket);
     this.handleFindStranger(socket);
     this.handleSendMessage(socket);
@@ -36,8 +34,6 @@ class SocketController {  constructor(io) {
 
       // Send current users to the new user
       socket.emit('room-users', users);
-
-      console.log(`${username} joined room ${roomId}`);
     });
   }
   handleFindStranger(socket) {
@@ -71,15 +67,12 @@ class SocketController {  constructor(io) {
           chatId,
           partnerUsername: username 
         });
-
-        console.log(`Matched ${username} with ${partner.username}`);
       } else {
         const added = this.strangerChatService.addToWaitingList(socket);
         if (added) {
           socket.emit('waiting-for-stranger', { 
             waitingCount: this.strangerChatService.waitingUsers.length 
           });
-          console.log(`${username} is waiting for a stranger`);
           this.strangerChatService.broadcastWaitingUpdate();
         } else {
           socket.emit('already-waiting', { message: 'You are already in the queue' });

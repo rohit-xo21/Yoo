@@ -71,12 +71,10 @@ function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, 
 
       socket.on('stranger-left', (data) => {
         // Handle enhanced stranger-left event with redirect instructions
-        const reason = data?.reason || 'unknown'
         const message = data?.message || 'Stranger disconnected.'
         const shouldRedirectHome = data?.redirectToHome || false
         
-        console.log('Stranger left event received:', { reason, message, shouldRedirectHome })
-          setMessages(prev => [...prev, {
+        setMessages(prev => [...prev, {
           id: Date.now(),
           type: 'system',
           message: message,
@@ -88,7 +86,6 @@ function Chat({ username, roomId, chatType, socket, onLeaveChat, isRoomCreator, 
         setTimeout(() => {
           if (shouldRedirectHome) {
             // New behavior: Go directly to home when partner leaves
-            console.log('Redirecting to home as instructed by server')
             onLeaveChat() // This will disconnect and go to home
           } else {
             // Legacy behavior: Try to find new stranger (for high traffic scenarios)

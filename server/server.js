@@ -63,6 +63,24 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Simple test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: 'Server is working!',
+    status: 'success',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Yoo Chat Server API',
+    status: 'running',
+    endpoints: ['/health', '/api/test', '/socket.io']
+  });
+});
+
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, config.staticPath)));
 
